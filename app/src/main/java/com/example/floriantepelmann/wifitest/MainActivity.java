@@ -48,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
         return lower <= x && x <= upper;
     }
 
+    // blablablatest
+
     private void playSound(final int soundFile, long startDelay, long interDelay, int vols) {
         int MAX_VOLUME = 100;
         int vol = vols;
@@ -77,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
         }, (startDelay * 100) + (interDelay * 100));
     }
 
-
+// noch ein blablabla test
     class MyBroadCastReceiver extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
