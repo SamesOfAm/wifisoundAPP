@@ -48,8 +48,6 @@ public class MainActivity extends AppCompatActivity {
         return lower <= x && x <= upper;
     }
 
-    // blablablatest
-
     private void playSound(final int soundFile, long startDelay, long interDelay, int vols) {
         int MAX_VOLUME = 100;
         int vol = vols;
@@ -78,8 +76,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }, (startDelay * 100) + (interDelay * 100));
     }
-
-// noch ein blablabla test
     class MyBroadCastReceiver extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -95,12 +91,6 @@ public class MainActivity extends AppCompatActivity {
                         - Integer.decode("0x" + bssid.substring(9, 11))
                         + Integer.decode("0x" + bssid.substring(12, 14))
                         - Integer.decode("0x" + bssid.substring(15, 17)));
-                /* if(isBetween(idCalc, 0, 9)){
-                    MediaPlayer sound01 = MediaPlayer.create(context, R.raw.sound_01);
-                    final float volume = (float) (1 - (Math.log(MAX_VOLUME + vol / Math.log(MAX_VOLUME))));
-                    sound01.setVolume(volume, volume);
-                    sound01.start();
-                } */
                 if(isBetween(idCalc, 0, 9)){
                     playSound(R.raw.sound_01, (long)(Math.random() * 20) + 1, (long)(Math.random() * 20) + 1, vol);
                 }
