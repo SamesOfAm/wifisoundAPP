@@ -20,16 +20,18 @@ import android.media.MediaPlayer;
 
 public class MainActivity extends AppCompatActivity {
 
-    ArrayAdapter adapter;
-    WifiManager wifiManager;
-    ListView list;
-    WifiInfo wifiInfo;
-    ArrayList<String> wifis;
+    private ArrayAdapter adapter;
+    private WifiManager wifiManager;
+    private WifiInfo wifiInfo;
+    private ArrayList<String> wifis;
+    private MediaPlayer drone;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        list = findViewById(R.id.listView);
+        ListView list = findViewById(R.id.listView);
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         MyBroadCastReceiver myBroadCastReceiver = new MyBroadCastReceiver();
         wifiInfo = wifiManager.getConnectionInfo();
@@ -38,10 +40,12 @@ public class MainActivity extends AppCompatActivity {
         wifis = new ArrayList<>();
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, wifis);
         list.setAdapter(adapter);
-        MediaPlayer drone = MediaPlayer.create(this, R.raw.drone2);
-        drone.start();
-        drone.setLooping(true);
         wifiManager.startScan();
+        drone = MediaPlayer.create(this, R.raw.drone);
+        drone.start();
+        float droneVolume = (float) 0.2;
+        drone.setVolume(droneVolume, droneVolume);
+        drone.setLooping(true);
     }
 
     public int getMaxNum(List<ScanResult> results) {
@@ -110,6 +114,10 @@ public class MainActivity extends AppCompatActivity {
             wifis.clear();
             List<ScanResult> results = wifiManager.getScanResults();
             Collections.sort(results, new ScanResultComparator());
+            int droneMaxVolume = 50;
+            int calcDroneVol = getMaxNum(results);
+            final float droneVol = (float) (1 - (Math.log(droneMaxVolume - calcDroneVol) / Math.log(droneMaxVolume)));
+            drone.setVolume(droneVol, droneVol);
             for (int i = 0; i < getMaxNum(results); i++) {
                 String bssid = results.get(i).BSSID;
                 int vol = results.get(i).level + 100;
@@ -122,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
                 long startDel = (long) Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500;
                 long interDel = (long) Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500;
                 playSound(determineSoundFile(idCalc), startDel, interDel, vol);
-                wifis.add("sound_" + (determineSoundFile(idCalc) - 2131427328) + " " + startDel + " " + interDel);
+                wifis.add(calcDroneVol + " " + idCalc + " sound_" + (determineSoundFile(idCalc) - 2131427328) + " " + startDel + " " + interDel);
             }
             adapter.notifyDataSetChanged();
             Handler scanDelay = new Handler();
