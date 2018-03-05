@@ -13,6 +13,8 @@ import android.os.Handler;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import java.lang.*;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
@@ -25,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     private WifiInfo wifiInfo;
     private ArrayList<String> wifis;
     private MediaPlayer drone;
+    private float droneVolume = (float) 0.2;
 
 
     @Override
@@ -43,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
         wifiManager.startScan();
         drone = MediaPlayer.create(this, R.raw.drone);
         drone.start();
-        float droneVolume = (float) 0.2;
         drone.setVolume(droneVolume, droneVolume);
         drone.setLooping(true);
     }
@@ -108,6 +110,34 @@ public class MainActivity extends AppCompatActivity {
             }
         }, (startDelay) + (interDelay) + (interDelay) + (interDelay));
     }
+
+    private void fadeVolume(final float destVolume){
+        final int fadeDuration = 1000;
+        final int fadeInterval = 80;
+        int numberOfSteps = fadeDuration / fadeInterval;
+        final float deltaVolume = destVolume / (float)numberOfSteps;
+
+        //Create a new Timer and Timer task to run the fading outside the main UI thread
+        final Timer timer = new Timer(true);
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                fadeStep(deltaVolume); //Do a fade step
+                //Cancel and Purge the Timer if the desired volume has been reached
+                if(droneVolume >= destVolume){
+                    timer.cancel();
+                    timer.purge();
+                }
+            }
+        };
+        timer.schedule(timerTask,fadeInterval,fadeInterval);
+    }
+
+    private void fadeStep(float deltaVolume){
+        drone.setVolume(droneVolume, droneVolume);
+        droneVolume += deltaVolume;
+    }
+
     class MyBroadCastReceiver extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -117,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
             int droneMaxVolume = 50;
             int calcDroneVol = getMaxNum(results);
             final float droneVol = (float) (1 - (Math.log(droneMaxVolume - calcDroneVol) / Math.log(droneMaxVolume)));
-            drone.setVolume(droneVol, droneVol);
+            fadeVolume(droneVol);
             for (int i = 0; i < getMaxNum(results); i++) {
                 String bssid = results.get(i).BSSID;
                 int vol = results.get(i).level + 100;
