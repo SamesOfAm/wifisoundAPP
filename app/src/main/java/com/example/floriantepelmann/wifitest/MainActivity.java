@@ -19,6 +19,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import android.media.MediaPlayer;
+import android.media.AudioManager;
+import android.media.SoundPool;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> wifis;
     private MediaPlayer drone;
     private float currentDroneVolume = (float) 0.2;
+    private SoundPool sound = new SoundPool(3, AudioManager.STREAM_MUSIC, 0);
 
 
     @Override
@@ -72,22 +75,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void playSound(final int soundNum, long startDelay, long interDelay, int vol) {
         int maxVolume = 55;
-        final MediaPlayer sound = MediaPlayer.create(this, soundNum);
-        sound.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-            @Override
-            public boolean onError(MediaPlayer mediaPlayer, int i, int k) {
-                System.out.println("Error what= " + i + " extra= " + k);
-                return false;
-            }
-        });
         final float volume = (float) ((Math.log(maxVolume - vol) / Math.log(maxVolume)));
-        sound.setVolume(1 - volume, 1- volume);
+        final int soundId = sound.load(this, soundNum, 1);
         Handler firstHit = new Handler();
         firstHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.start();
-                    sound.release();
+                    sound.play(soundId, volume, volume, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -97,8 +91,7 @@ public class MainActivity extends AppCompatActivity {
         secondHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.start();
-                    sound.release();
+                    sound.play(soundId, volume, volume, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -108,8 +101,7 @@ public class MainActivity extends AppCompatActivity {
         thirdHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.start();
-                    sound.release();
+                    sound.play(soundId, volume, volume, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -119,8 +111,7 @@ public class MainActivity extends AppCompatActivity {
         fourthHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.start();
-                    sound.release();
+                    sound.play(soundId, volume, volume, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -166,6 +157,8 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             wifis.clear();
+            final int soundId = sound.load(context, R.raw.sound_04, 1);
+            sound.play(soundId, 1, 1, 0,0, 1);
             List<ScanResult> results = wifiManager.getScanResults();
             Collections.sort(results, new ScanResultComparator());
             int maxDroneVolume = 14;
@@ -182,14 +175,15 @@ public class MainActivity extends AppCompatActivity {
                         - Integer.decode("0x" + bssid.substring(9, 11))
                         + Integer.decode("0x" + bssid.substring(12, 14))
                         - Integer.decode("0x" + bssid.substring(15, 17)));
-                long startDel = (long) Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500;
-                long interDel = (long) Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500;
-                playSound(determineSoundFile(idCalc), startDel, interDel, vol);
+                // long startDel = (long) Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500;
+                // long interDel = (long) Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500;
+                // playSound(determineSoundFile(idCalc), startDel, interDel, vol);
                 wifis.add(currentDroneVolume + " " + " sound_" + (determineSoundFile(idCalc) - 2131427328) + " " + vol);
             }
             adapter.notifyDataSetChanged();
             Handler scanDelay = new Handler();
-            scanDelay.postDelayed(new Runnable() {
+            wifiManager.startScan();
+            /* scanDelay.postDelayed(new Runnable() {
                 public void run() {
                     try {
                         wifiManager.startScan();
@@ -197,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
-            }, 1000);
+            }, 1000); */
         }
     }
 }
