@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private WifiInfo wifiInfo;
     private ArrayList<String> wifis;
     private MediaPlayer drone;
-    private float currentDroneVolume = (float) 0.2;
+    private float currentDroneVolume = (float) 1;
     private SoundPool sound = new SoundPool(3, AudioManager.STREAM_MUSIC, 0);
 
 
@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
         firstHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.play(soundId, volume, volume, 0,0,1);
+                    sound.play(soundId, 1 - volume, 1 - volume, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
         secondHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.play(soundId, volume, volume, 0,0,1);
+                    sound.play(soundId, 1 - volume, 1 - volume, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
         thirdHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.play(soundId, volume, volume, 0,0,1);
+                    sound.play(soundId, 1 - volume, 1 - volume, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
         fourthHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.play(soundId, volume, volume, 0,0,1);
+                    sound.play(soundId, 1 - volume, 1 - volume, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
         }, (startDelay) + (interDelay) + (interDelay) + (interDelay));
     }
 
-    private void fadeVolume(final float currVol, final float destVolume){
+    /* private void fadeVolume(final float currVol, final float destVolume){
         final int fadeDuration = 1000;
         final int fadeInterval = 80;
         final int numberOfSteps = fadeDuration / fadeInterval;
@@ -151,22 +151,32 @@ public class MainActivity extends AppCompatActivity {
         drone.setVolume(deltaVolume, deltaVolume);
         currentDroneVolume = deltaVolume;
         System.out.println("ZZZ " + currentDroneVolume);
-    }
+    } */
 
     class MyBroadCastReceiver extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
             wifis.clear();
-            final int soundId = sound.load(context, R.raw.sound_04, 1);
-            sound.play(soundId, 1, 1, 0,0, 1);
             List<ScanResult> results = wifiManager.getScanResults();
             Collections.sort(results, new ScanResultComparator());
-            int maxDroneVolume = 14;
+
+            int iterations;
             int numberOfNetworks = getMaxNum(results);
+            if (numberOfNetworks < 5) {
+                iterations = numberOfNetworks;
+            } else {
+                iterations = 5;
+            }
+            /* int maxDroneVolume;
+            if (numberOfNetworks > 20){
+                maxDroneVolume = numberOfNetworks;
+            } else {
+                maxDroneVolume = 20;
+            }
             final float nextDroneVolume = (float) ((Math.log(maxDroneVolume - numberOfNetworks) / Math.log(maxDroneVolume)));
-            System.out.println("ZZZ " + numberOfNetworks + " : " + (1 - nextDroneVolume));
-            fadeVolume(currentDroneVolume,1 - nextDroneVolume);
-            for (int i = 0; i < getMaxNum(results); i++) {
+            System.out.println("ZZZ " + maxDroneVolume + " : " + (1 - nextDroneVolume));
+            fadeVolume(currentDroneVolume,1 - nextDroneVolume); */
+            for (int i = 0; i < iterations; i++) {
                 String bssid = results.get(i).BSSID;
                 int vol = results.get(i).level + 100;
                 int idCalc = Math.abs(Integer.decode("0x" + bssid.substring(0, 2))
@@ -175,15 +185,14 @@ public class MainActivity extends AppCompatActivity {
                         - Integer.decode("0x" + bssid.substring(9, 11))
                         + Integer.decode("0x" + bssid.substring(12, 14))
                         - Integer.decode("0x" + bssid.substring(15, 17)));
-                // long startDel = (long) Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500;
-                // long interDel = (long) Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500;
-                // playSound(determineSoundFile(idCalc), startDel, interDel, vol);
-                wifis.add(currentDroneVolume + " " + " sound_" + (determineSoundFile(idCalc) - 2131427328) + " " + vol);
+                long startDel = (long) Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500;
+                long interDel = (long) Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500;
+                playSound(determineSoundFile(idCalc), startDel, interDel, vol);
+                wifis.add(numberOfNetworks + " sound_" + (determineSoundFile(idCalc) - 2131427328) + " " + (1 - (float) ((Math.log(55 - vol) / Math.log(55)))));
             }
             adapter.notifyDataSetChanged();
             Handler scanDelay = new Handler();
-            wifiManager.startScan();
-            /* scanDelay.postDelayed(new Runnable() {
+            scanDelay.postDelayed(new Runnable() {
                 public void run() {
                     try {
                         wifiManager.startScan();
@@ -191,7 +200,7 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
-            }, 1000); */
+            }, 1000);
         }
     }
 }
