@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
     private WifiInfo wifiInfo;
     private ArrayList<String> wifis;
     private MediaPlayer drone;
-    private float droneVolume = (float) 0.2;
+    private float currentDroneVolume = (float) 0.2;
 
 
     @Override
@@ -45,8 +45,15 @@ public class MainActivity extends AppCompatActivity {
         list.setAdapter(adapter);
         wifiManager.startScan();
         drone = MediaPlayer.create(this, R.raw.drone);
+        drone.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+            @Override
+            public boolean onError(MediaPlayer mediaPlayer, int i, int k) {
+                System.out.println("Error what= " + i + " extra= " + k);
+                return false;
+            }
+        });
         drone.start();
-        drone.setVolume(droneVolume, droneVolume);
+        drone.setVolume(currentDroneVolume, currentDroneVolume);
         drone.setLooping(true);
     }
 
@@ -64,15 +71,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playSound(final int soundNum, long startDelay, long interDelay, int vol) {
-        int maxVolume = 50;
+        int maxVolume = 55;
         final MediaPlayer sound = MediaPlayer.create(this, soundNum);
-        final float volume = (float) (1 - (Math.log(maxVolume - vol) / Math.log(maxVolume)));
-        sound.setVolume(volume, volume);
+        sound.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+            @Override
+            public boolean onError(MediaPlayer mediaPlayer, int i, int k) {
+                System.out.println("Error what= " + i + " extra= " + k);
+                return false;
+            }
+        });
+        final float volume = (float) ((Math.log(maxVolume - vol) / Math.log(maxVolume)));
+        sound.setVolume(1 - volume, 1- volume);
         Handler firstHit = new Handler();
         firstHit.postDelayed(new Runnable() {
             public void run() {
                 try {
                     sound.start();
+                    sound.release();
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -83,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     sound.start();
+                    sound.release();
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -93,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     sound.start();
+                    sound.release();
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -111,20 +128,26 @@ public class MainActivity extends AppCompatActivity {
         }, (startDelay) + (interDelay) + (interDelay) + (interDelay));
     }
 
-    private void fadeVolume(final float destVolume){
+    private void fadeVolume(final float currVol, final float destVolume){
         final int fadeDuration = 1000;
         final int fadeInterval = 80;
-        int numberOfSteps = fadeDuration / fadeInterval;
-        final float deltaVolume = destVolume / (float)numberOfSteps;
+        final int numberOfSteps = fadeDuration / fadeInterval;
+        final float volumeDifference = destVolume - currVol;
+        final float deltaVolume;
 
-        //Create a new Timer and Timer task to run the fading outside the main UI thread
+        final float volumeStep = volumeDifference / (float) numberOfSteps;
+        if(volumeDifference > 0) {
+            deltaVolume = volumeStep + currentDroneVolume;
+        } else {
+            deltaVolume = volumeStep - currentDroneVolume;
+        }
+
         final Timer timer = new Timer(true);
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
-                fadeStep(deltaVolume); //Do a fade step
-                //Cancel and Purge the Timer if the desired volume has been reached
-                if(droneVolume >= destVolume){
+                fadeStep(deltaVolume);
+                if(currentDroneVolume >= destVolume){
                     timer.cancel();
                     timer.purge();
                 }
@@ -134,8 +157,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fadeStep(float deltaVolume){
-        drone.setVolume(droneVolume, droneVolume);
-        droneVolume += deltaVolume;
+        drone.setVolume(deltaVolume, deltaVolume);
+        currentDroneVolume = deltaVolume;
+        System.out.println("ZZZ " + currentDroneVolume);
     }
 
     class MyBroadCastReceiver extends BroadcastReceiver{
@@ -144,10 +168,11 @@ public class MainActivity extends AppCompatActivity {
             wifis.clear();
             List<ScanResult> results = wifiManager.getScanResults();
             Collections.sort(results, new ScanResultComparator());
-            int droneMaxVolume = 50;
-            int calcDroneVol = getMaxNum(results);
-            final float droneVol = (float) (1 - (Math.log(droneMaxVolume - calcDroneVol) / Math.log(droneMaxVolume)));
-            fadeVolume(droneVol);
+            int maxDroneVolume = 14;
+            int numberOfNetworks = getMaxNum(results);
+            final float nextDroneVolume = (float) ((Math.log(maxDroneVolume - numberOfNetworks) / Math.log(maxDroneVolume)));
+            System.out.println("ZZZ " + numberOfNetworks + " : " + (1 - nextDroneVolume));
+            fadeVolume(currentDroneVolume,1 - nextDroneVolume);
             for (int i = 0; i < getMaxNum(results); i++) {
                 String bssid = results.get(i).BSSID;
                 int vol = results.get(i).level + 100;
@@ -160,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
                 long startDel = (long) Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500;
                 long interDel = (long) Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500;
                 playSound(determineSoundFile(idCalc), startDel, interDel, vol);
-                wifis.add(calcDroneVol + " " + idCalc + " sound_" + (determineSoundFile(idCalc) - 2131427328) + " " + startDel + " " + interDel);
+                wifis.add(currentDroneVolume + " " + " sound_" + (determineSoundFile(idCalc) - 2131427328) + " " + vol);
             }
             adapter.notifyDataSetChanged();
             Handler scanDelay = new Handler();
@@ -172,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
-            }, 4000);
+            }, 1000);
         }
     }
 }
