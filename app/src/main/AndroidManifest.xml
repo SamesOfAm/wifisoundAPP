@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.floriantepelmann.wifitest">
+    package="com.example.floriantepelmann.wifiwithstabledrone">
      <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /> 
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <application
@@ -10,8 +10,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity"
-            android:label="Wifi 1 Sound"
+        <activity android:name="com.example.floriantepelmann.wifitest.MainActivity"
+            android:label="Wifi with Stable Drone"
             android:screenOrientation="portrait"
             android:configChanges="keyboardHidden|orientation|screenSize">
             <intent-filter>
