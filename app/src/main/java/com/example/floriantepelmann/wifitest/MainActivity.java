@@ -35,6 +35,9 @@ public class MainActivity extends AppCompatActivity {
         wifis = new ArrayList<>();
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, wifis);
         list.setAdapter(adapter);
+        MediaPlayer drone = MediaPlayer.create(this, R.raw.dronesame);
+        drone.start();
+        drone.setLooping(true);
         wifiManager.startScan();
     }
 
