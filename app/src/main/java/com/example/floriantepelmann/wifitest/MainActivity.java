@@ -5,8 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.ScanResult;
-import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
@@ -21,7 +21,6 @@ public class MainActivity extends AppCompatActivity {
 
     private ArrayAdapter adapter;
     private WifiManager wifiManager;
-    private WifiInfo wifiInfo;
     private ArrayList<String> wifis;
 
     @Override
@@ -31,7 +30,6 @@ public class MainActivity extends AppCompatActivity {
         ListView list = findViewById(R.id.listView);
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         MyBroadCastReceiver myBroadCastReceiver = new MyBroadCastReceiver();
-        wifiInfo = wifiManager.getConnectionInfo();
         registerReceiver(myBroadCastReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
         wifiManager.startScan();
         wifis = new ArrayList<>();
@@ -45,12 +43,31 @@ public class MainActivity extends AppCompatActivity {
         return (int) soundVal;
     }
 
-    private void playSound(final int soundNum, int vol) {
+    private void playSound(final int soundNum, long startDelay, long interDelay, int vol) {
         int maxVolume = 55;
-        final float volume = (1 - (float) (Math.log(maxVolume - vol) / Math.log(maxVolume)));
         final MediaPlayer sound = MediaPlayer.create(this, soundNum);
-        sound.setVolume(volume, volume);
-        sound.start();
+        sound.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+            @Override
+            public boolean onError(MediaPlayer mediaPlayer, int i, int k) {
+                System.out.println("ZZZ Error what= " + i + " extra= " + k);
+                return false;
+            }
+        });
+        final float volume = (float) ((Math.log(maxVolume - vol) / Math.log(maxVolume)));
+        sound.setVolume(1 - volume, 1- volume);
+        for (int i = 0; i < 3; i++){
+            Handler nextHit = new Handler();
+            nextHit.postDelayed(new Runnable() {
+                public void run() {
+                    try {
+                        sound.start();
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, (startDelay) + (interDelay * i));
+        }
+        sound.release();
     }
 
     class MyBroadCastReceiver extends BroadcastReceiver{
@@ -60,19 +77,28 @@ public class MainActivity extends AppCompatActivity {
             List<ScanResult> results = wifiManager.getScanResults();
             Collections.sort(results, new ScanResultComparator());
             int numberOfNetworks = results.size();
-                String bssid = results.get(0).BSSID;
-                int vol = results.get(0).level + 100;
-                int idCalc = Math.abs(Integer.decode("0x" + bssid.substring(0, 2))
-                        - Integer.decode("0x" + bssid.substring(3, 5))
-                        + Integer.decode("0x" + bssid.substring(6, 8))
-                        - Integer.decode("0x" + bssid.substring(9, 11))
-                        + Integer.decode("0x" + bssid.substring(12, 14))
-                        - Integer.decode("0x" + bssid.substring(15, 17)));
-                playSound(determineSoundFile(idCalc), vol);
+            int iterations = 5;
+            if (numberOfNetworks < 5) {
+                iterations = numberOfNetworks;
+            }
+            for (int i = 0; i < iterations; i++) {
+                String bssid = results.get(i).BSSID;
+                int vol = results.get(i).level + 100;
+                int idCalc = Math.abs(
+                        Integer.decode("0x" + bssid.substring(0, 2)) -
+                        Integer.decode("0x" + bssid.substring(3, 5)) +
+                        Integer.decode("0x" + bssid.substring(6, 8)) -
+                        Integer.decode("0x" + bssid.substring(9, 11)) +
+                        Integer.decode("0x" + bssid.substring(12, 14)) -
+                        Integer.decode("0x" + bssid.substring(15, 17))
+                );
+                long startDel = (long) Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500;
+                long interDel = (long) Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500;
+                playSound(determineSoundFile(idCalc), startDel, interDel, vol);
                 wifis.add(numberOfNetworks + " sound_" + (determineSoundFile(idCalc) - 2131427328) + " " + vol + " " + (1 - (float) (Math.log(55 - vol) / Math.log(55))));
-                adapter.notifyDataSetChanged();
-                wifiManager.startScan();
+            }
+            adapter.notifyDataSetChanged();
+            wifiManager.startScan();
         }
     }
 }
-
