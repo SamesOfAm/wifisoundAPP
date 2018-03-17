@@ -26,8 +26,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        ListView list = findViewById(R.id.listView);
+        setContentView(com.example.floriantepelmann.wifiwithstabledrone.R.layout.activity_main);
+        ListView list = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.listView);
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         MyBroadCastReceiver myBroadCastReceiver = new MyBroadCastReceiver();
         registerReceiver(myBroadCastReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
         wifis = new ArrayList<>();
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, wifis);
         list.setAdapter(adapter);
-        MediaPlayer drone = MediaPlayer.create(this, R.raw.dronesame);
+        MediaPlayer drone = MediaPlayer.create(this, com.example.floriantepelmann.wifiwithstabledrone.R.raw.dronesame);
         drone.start();
         drone.setLooping(true);
         wifiManager.startScan();
