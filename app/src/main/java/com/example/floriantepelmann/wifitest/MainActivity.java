@@ -4,6 +4,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
@@ -22,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayAdapter adapter;
     private WifiManager wifiManager;
     private ArrayList<String> wifis;
+    private SoundPool sound = new SoundPool(3, AudioManager.STREAM_MUSIC, 0);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,23 +49,13 @@ public class MainActivity extends AppCompatActivity {
         return (int) soundVal;
     }
 
-    private void playSound(final int soundNum, long startDelay, long interDelay, int vol) {
-        // int maxVolume = 55;
-        final MediaPlayer sound = MediaPlayer.create(this, soundNum);
-        sound.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-            @Override
-            public boolean onError(MediaPlayer mediaPlayer, int i, int k) {
-                System.out.println("ZZZ Error what= " + i + " extra= " + k);
-                return false;
-            }
-        });
-        // final float volume = (float) ((Math.log(maxVolume - vol) / Math.log(maxVolume)));
-        // sound.setVolume(1 - volume, 1- volume);
+    private void playSound(final int soundNum, long startDelay, long interDelay) {
+        final int soundId = sound.load(this, soundNum, 1);
         Handler firstHit = new Handler();
         firstHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.start();
+                    sound.play(soundId, 1, 1, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -72,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
         secondHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.start();
+                    sound.play(soundId, 1, 1, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -82,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
         thirdHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.start();
+                    sound.play(soundId, 1, 1, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -92,8 +85,7 @@ public class MainActivity extends AppCompatActivity {
         fourthHit.postDelayed(new Runnable() {
             public void run() {
                 try {
-                    sound.start();
-                    sound.release();
+                    sound.play(soundId, 1, 1, 0,0,1);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -114,19 +106,53 @@ public class MainActivity extends AppCompatActivity {
             }
             for (int i = 0; i < iterations; i++) {
                 String bssid = results.get(i).BSSID;
-                int vol = results.get(i).level + 100;
-                int idCalc = Math.abs(
-                        Integer.decode("0x" + bssid.substring(0, 2)) -
-                        Integer.decode("0x" + bssid.substring(3, 5)) +
-                        Integer.decode("0x" + bssid.substring(6, 8)) -
-                        Integer.decode("0x" + bssid.substring(9, 11)) +
-                        Integer.decode("0x" + bssid.substring(12, 14)) -
-                        Integer.decode("0x" + bssid.substring(15, 17))
-                );
-                long startDel = (long) Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500;
-                long interDel = (long) Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500;
-                playSound(determineSoundFile(idCalc), startDel, interDel, vol);
-                wifis.add(numberOfNetworks + " sound_" + (determineSoundFile(idCalc) - 2131427328) + " " + vol + " " + (1 - (float) (Math.log(55 - vol) / Math.log(55))));
+                int decA = 0;
+                int decB = 0;
+                int decC = 0;
+                int decD = 0;
+                int decE = 0;
+                int decF = 0;
+                String hexA = "0x" + bssid.substring(0, 2);
+                try {
+                    decA = Integer.decode(hexA);
+                } catch(Exception e){
+                    e.printStackTrace();
+                }
+                String hexB = "0x" + bssid.substring(3, 5);
+                try {
+                    decB = Integer.decode(hexB);
+                } catch(Exception e){
+                    e.printStackTrace();
+                }
+                String hexC = "0x" + bssid.substring(6, 8);
+                try {
+                    decC = Integer.decode(hexC);
+                } catch(Exception e){
+                    e.printStackTrace();
+                }
+                String hexD = "0x" + bssid.substring(9, 11);
+                try {
+                    decD = Integer.decode(hexD);
+                } catch(Exception e){
+                    e.printStackTrace();
+                }
+                String hexE = "0x" + bssid.substring(12, 14);
+                try {
+                    decE = Integer.decode(hexE);
+                } catch(Exception e){
+                    e.printStackTrace();
+                }
+                String hexF = "0x" + bssid.substring(15, 17);
+                try {
+                    decF = Integer.decode(hexF);
+                } catch(Exception e){
+                    e.printStackTrace();
+                }
+                int idCalc = Math.abs(decA - decB + decC - decD + decE - decF);
+                long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500);
+                long interDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500);
+                playSound(determineSoundFile(idCalc), startDel, interDel);
+                wifis.add(numberOfNetworks + " " + idCalc);
             }
             adapter.notifyDataSetChanged();
             wifiManager.startScan();
