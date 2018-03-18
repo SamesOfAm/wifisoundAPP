@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void playSound(final int soundNum, long startDelay, long interDelay, int vol) {
-        int maxVolume = 55;
+        // int maxVolume = 55;
         final MediaPlayer sound = MediaPlayer.create(this, soundNum);
         sound.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
@@ -53,21 +53,49 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
-        final float volume = (float) ((Math.log(maxVolume - vol) / Math.log(maxVolume)));
-        sound.setVolume(1 - volume, 1- volume);
-        for (int i = 0; i < 3; i++){
-            Handler nextHit = new Handler();
-            nextHit.postDelayed(new Runnable() {
-                public void run() {
-                    try {
-                        sound.start();
-                    } catch(Exception e) {
-                        e.printStackTrace();
-                    }
+        // final float volume = (float) ((Math.log(maxVolume - vol) / Math.log(maxVolume)));
+        // sound.setVolume(1 - volume, 1- volume);
+        Handler firstHit = new Handler();
+        firstHit.postDelayed(new Runnable() {
+            public void run() {
+                try {
+                    sound.start();
+                } catch(Exception e) {
+                    e.printStackTrace();
                 }
-            }, (startDelay) + (interDelay * i));
-        }
-        sound.release();
+            }
+        }, startDelay);
+        Handler secondHit = new Handler();
+        secondHit.postDelayed(new Runnable() {
+            public void run() {
+                try {
+                    sound.start();
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, (startDelay) + (interDelay));
+        Handler thirdHit = new Handler();
+        thirdHit.postDelayed(new Runnable() {
+            public void run() {
+                try {
+                    sound.start();
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, (startDelay) + (interDelay) + (interDelay));
+        Handler fourthHit = new Handler();
+        fourthHit.postDelayed(new Runnable() {
+            public void run() {
+                try {
+                    sound.start();
+                    sound.release();
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, (startDelay) + (interDelay) + (interDelay) + (interDelay));
     }
 
     class MyBroadCastReceiver extends BroadcastReceiver{
