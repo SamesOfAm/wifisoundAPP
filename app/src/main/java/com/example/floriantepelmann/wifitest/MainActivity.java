@@ -149,8 +149,14 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 int idCalc = Math.abs(decA - decB + decC - decD + decE - decF);
-                if (idCalc > 510) {
-                    idCalc = 510;
+                if(idCalc > 600) {
+                    idCalc = 400;
+                }
+                else if (idCalc > 500) {
+                    idCalc = 350;
+                }
+                else if (idCalc > 400) {
+                    idCalc = 360;
                 }
                 long startDel = (long) Math.abs(decE * 7 + 500);
                 long interDel = (long) Math.abs(decF * 7 + 500);
