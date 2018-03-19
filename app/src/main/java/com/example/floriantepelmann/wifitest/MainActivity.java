@@ -149,8 +149,11 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 int idCalc = Math.abs(decA - decB + decC - decD + decE - decF);
-                long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500);
-                long interDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500);
+                if (idCalc > 510) {
+                    idCalc = 510;
+                }
+                long startDel = (long) Math.abs(decE * 7 + 500);
+                long interDel = (long) Math.abs(decF * 7 + 500);
                 playSound(determineSoundFile(idCalc), startDel, interDel);
                 wifis.add(numberOfNetworks + " " + idCalc);
             }
