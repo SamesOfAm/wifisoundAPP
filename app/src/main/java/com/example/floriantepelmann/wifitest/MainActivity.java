@@ -18,6 +18,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import android.media.MediaPlayer;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -25,11 +28,27 @@ public class MainActivity extends AppCompatActivity {
     private WifiManager wifiManager;
     private ArrayList<String> wifis;
     private SoundPool sound = new SoundPool(3, AudioManager.STREAM_MUSIC, 0);
+    private long lastTime = System.currentTimeMillis();
+    private int chapterFactor = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(com.example.floriantepelmann.wifiwithstabledrone.R.layout.activity_main);
+        Button btn2 = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.btn2);
+        btn2.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                chapterFactor++;
+                if (chapterFactor > 5){
+                    chapterFactor = 1;
+                }
+                wifis.clear();
+                wifis.add("Current chapter: " + chapterFactor);
+                lastTime = System.currentTimeMillis();
+            }
+        });
         ListView list = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.listView);
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         MyBroadCastReceiver myBroadCastReceiver = new MyBroadCastReceiver();
@@ -45,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public int determineSoundFile(int idCalc){
-        double soundVal = Math.ceil(idCalc / 10) + 2131427329;
+        double soundVal = Math.ceil(idCalc / 50) + 2131427329;
         return (int) soundVal;
     }
 
@@ -153,16 +172,24 @@ public class MainActivity extends AppCompatActivity {
                     idCalc = 400;
                 }
                 else if (idCalc > 500) {
-                    idCalc = 350;
+                    idCalc = 300;
                 }
                 else if (idCalc > 400) {
-                    idCalc = 360;
+                    idCalc = 200;
+                }
+                if(System.currentTimeMillis() - lastTime >= 180000){
+                    chapterFactor++;
+                    if (chapterFactor > 5){
+                        chapterFactor = 1;
+                    }
+                    lastTime = System.currentTimeMillis();
                 }
                 long startDel = (long) Math.abs(decE * 7 + 500);
                 long interDel = (long) Math.abs(decF * 7 + 500);
-                playSound(determineSoundFile(idCalc), startDel, interDel);
-                wifis.add(numberOfNetworks + " " + idCalc);
+                playSound(determineSoundFile(idCalc * chapterFactor), startDel, interDel);
+                wifis.add(numberOfNetworks + " " + idCalc + " " + chapterFactor + " " + idCalc * chapterFactor);
             }
+            wifis.add("Current Chapter: " + chapterFactor);
             adapter.notifyDataSetChanged();
             wifiManager.startScan();
         }
