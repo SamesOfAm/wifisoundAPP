@@ -140,9 +140,9 @@ public class MainActivity extends AppCompatActivity {
                         Integer.decode("0x" + bssid.substring(12, 14)) -
                         Integer.decode("0x" + bssid.substring(15, 17))
                 );
-                int soundCalc = (int) Math.ceil(adCalc / 25) + chapterFactor * 21;
-                long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500);
-                long interDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500);
+                int soundCalc = (int) Math.ceil(adCalc / 14) + chapterFactor * 33;
+                long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 1000);
+                long interDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 1000);
                 playSound(determineSoundFile(soundCalc), startDel, interDel);
                 wifis.add(numberOfNetworks + " " + adCalc + " " + chapterFactor + " " + soundCalc);
             }
