@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<String> wifis;
     private SoundPool sound = new SoundPool(3, AudioManager.STREAM_MUSIC, 0);
     private long lastTime = System.currentTimeMillis();
-    private int chapterFactor = 1;
+    private int chapterFactor = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,8 +41,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 chapterFactor++;
-                if (chapterFactor > 5){
-                    chapterFactor = 1;
+                if (chapterFactor > 3){
+                    chapterFactor = 0;
                 }
                 wifis.clear();
                 wifis.add("Current chapter: " + chapterFactor);
@@ -63,9 +63,9 @@ public class MainActivity extends AppCompatActivity {
         wifiManager.startScan();
     }
 
-    public int determineSoundFile(int idCalc){
-        double soundVal = Math.ceil(idCalc / 50) + 2131427329;
-        return (int) soundVal;
+    public int determineSoundFile(int soundCalc){
+        double soundFile = soundCalc + 2131427329;
+        return (int) soundFile;
     }
 
     private void playSound(final int soundNum, long startDelay, long interDelay) {
@@ -118,6 +118,13 @@ public class MainActivity extends AppCompatActivity {
             wifis.clear();
             List<ScanResult> results = wifiManager.getScanResults();
             Collections.sort(results, new ScanResultComparator());
+            if(System.currentTimeMillis() - lastTime >= 180000){
+                chapterFactor++;
+                if (chapterFactor > 3){
+                    chapterFactor = 0;
+                }
+                lastTime = System.currentTimeMillis();
+            }
             int numberOfNetworks = results.size();
             int iterations = 5;
             if (numberOfNetworks < 5) {
@@ -125,69 +132,19 @@ public class MainActivity extends AppCompatActivity {
             }
             for (int i = 0; i < iterations; i++) {
                 String bssid = results.get(i).BSSID;
-                int decA = 0;
-                int decB = 0;
-                int decC = 0;
-                int decD = 0;
-                int decE = 0;
-                int decF = 0;
-                String hexA = "0x" + bssid.substring(0, 2);
-                try {
-                    decA = Integer.decode(hexA);
-                } catch(Exception e){
-                    e.printStackTrace();
-                }
-                String hexB = "0x" + bssid.substring(3, 5);
-                try {
-                    decB = Integer.decode(hexB);
-                } catch(Exception e){
-                    e.printStackTrace();
-                }
-                String hexC = "0x" + bssid.substring(6, 8);
-                try {
-                    decC = Integer.decode(hexC);
-                } catch(Exception e){
-                    e.printStackTrace();
-                }
-                String hexD = "0x" + bssid.substring(9, 11);
-                try {
-                    decD = Integer.decode(hexD);
-                } catch(Exception e){
-                    e.printStackTrace();
-                }
-                String hexE = "0x" + bssid.substring(12, 14);
-                try {
-                    decE = Integer.decode(hexE);
-                } catch(Exception e){
-                    e.printStackTrace();
-                }
-                String hexF = "0x" + bssid.substring(15, 17);
-                try {
-                    decF = Integer.decode(hexF);
-                } catch(Exception e){
-                    e.printStackTrace();
-                }
-                int idCalc = Math.abs(decA - decB + decC - decD + decE - decF);
-                if(idCalc > 600) {
-                    idCalc = 400;
-                }
-                else if (idCalc > 500) {
-                    idCalc = 300;
-                }
-                else if (idCalc > 400) {
-                    idCalc = 200;
-                }
-                if(System.currentTimeMillis() - lastTime >= 180000){
-                    chapterFactor++;
-                    if (chapterFactor > 5){
-                        chapterFactor = 1;
-                    }
-                    lastTime = System.currentTimeMillis();
-                }
-                long startDel = (long) Math.abs(decE * 7 + 500);
-                long interDel = (long) Math.abs(decF * 7 + 500);
-                playSound(determineSoundFile(idCalc * chapterFactor), startDel, interDel);
-                wifis.add(numberOfNetworks + " " + idCalc + " " + chapterFactor + " " + idCalc * chapterFactor);
+                int adCalc = Math.abs(
+                        Integer.decode("0x" + bssid.substring(0, 2)) -
+                        Integer.decode("0x" + bssid.substring(3, 5)) +
+                        Integer.decode("0x" + bssid.substring(6, 8)) -
+                        Integer.decode("0x" + bssid.substring(9, 11)) +
+                        Integer.decode("0x" + bssid.substring(12, 14)) -
+                        Integer.decode("0x" + bssid.substring(15, 17))
+                );
+                int soundCalc = (int) Math.ceil(adCalc / 25) + chapterFactor * 21;
+                long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 500);
+                long interDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 500);
+                playSound(determineSoundFile(soundCalc), startDel, interDel);
+                wifis.add(numberOfNetworks + " " + adCalc + " " + chapterFactor + " " + soundCalc);
             }
             wifis.add("Current Chapter: " + chapterFactor);
             adapter.notifyDataSetChanged();
