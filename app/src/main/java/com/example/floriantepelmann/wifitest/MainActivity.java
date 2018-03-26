@@ -9,7 +9,6 @@ import android.media.SoundPool;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
-import android.support.v4.math.MathUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
@@ -18,8 +17,6 @@ import java.lang.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
 import android.media.MediaPlayer;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -32,15 +29,22 @@ public class MainActivity extends AppCompatActivity {
     private WifiManager wifiManager;
     private ArrayList<String> wifis;
     private SoundPool sound = new SoundPool(3, AudioManager.STREAM_MUSIC, 0);
-    private long lastTime = System.currentTimeMillis();
     private int chapterFactor = 0;
     private MediaPlayer drone;
-    float droneVolume = (float) 0.2;
+    float droneVolume = (float) 0;
+    int numberOfNetworks = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(com.example.floriantepelmann.wifiwithstabledrone.R.layout.activity_main);
+        Button btn3 = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.btn3);
+        btn3.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                numberOfNetworks += 10;
+            }
+        });
         Button btn2 = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.btn2);
         btn2.setOnClickListener(new OnClickListener() {
             @Override
@@ -49,9 +53,6 @@ public class MainActivity extends AppCompatActivity {
                 if (chapterFactor > 3){
                     chapterFactor = 0;
                 }
-                wifis.clear();
-                wifis.add("Current chapter: " + chapterFactor);
-                lastTime = System.currentTimeMillis();
             }
         });
         ListView list = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.listView);
@@ -111,30 +112,6 @@ public class MainActivity extends AppCompatActivity {
         }, (startDelay) + (interDelay));
     }
 
-    private void fadeVolume(final float destVolume){
-        final int fadeDuration = 1000;
-        final int fadeInterval = 80;
-        int numberOfSteps = fadeDuration / fadeInterval;
-        final float deltaVolume = destVolume / (float)numberOfSteps;
-        final Timer timer = new Timer(true);
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                fadeStep(deltaVolume);
-                if(droneVolume >= destVolume){
-                    timer.cancel();
-                    timer.purge();
-                }
-            }
-        };
-        timer.schedule(timerTask,fadeInterval,fadeInterval);
-    }
-
-    private void fadeStep(float deltaVolume){
-        drone.setVolume(droneVolume, droneVolume);
-        droneVolume += deltaVolume;
-    }
-
     class MyBroadCastReceiver extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -142,27 +119,33 @@ public class MainActivity extends AppCompatActivity {
             List<ScanResult> results = wifiManager.getScanResults();
             Collections.sort(results, new ScanResultComparator());
             List<Integer> playingSounds = new ArrayList<>();
-            int droneMaxVolume = 60;
-            int calcDroneVol = results.size();
-            if (calcDroneVol >= 60){
-                calcDroneVol = 60;
+            numberOfNetworks = results.size();
+            float droneVol = 0;
+            if (numberOfNetworks <= 10){
+                droneVol = (float) 0.1;
             }
-            else if (calcDroneVol <= 10){
-                calcDroneVol = 10;
+            else if (numberOfNetworks <= 20){
+                droneVol = (float) 0.25;
             }
-            final float droneVol = (float) ((1 - Math.log(droneMaxVolume - calcDroneVol) / Math.log(droneMaxVolume)));
-            fadeVolume(droneVol);
-            if(System.currentTimeMillis() - lastTime >= 180000){
-                chapterFactor++;
-                if (chapterFactor > 3){
-                    chapterFactor = 0;
-                }
-                lastTime = System.currentTimeMillis();
+            else if (numberOfNetworks <= 30){
+                droneVol = (float) 0.4;
             }
-            int numberOfNetworks = results.size();
+            else if (numberOfNetworks <= 40){
+                droneVol = (float) 0.55;
+            }
+            else if (numberOfNetworks <= 50){
+                droneVol = (float) 0.7;
+            }
+            else if (numberOfNetworks <= 60){
+                droneVol = (float) 0.85;
+            }
+            else if (numberOfNetworks > 60) {
+                droneVol = (float) 1;
+            }
+            drone.setVolume(droneVol, droneVol);
             int iterations = 5;
             if (numberOfNetworks < 5) {
-                iterations = numberOfNetworks;
+                iterations = results.size();
             }
             for (int i = 0; i < iterations; i++) {
                 String bssid = results.get(i).BSSID;
@@ -183,19 +166,14 @@ public class MainActivity extends AppCompatActivity {
                 if(soundCalc >= 127){
                     soundCalc = 127;
                 }
-                long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 100);
+                int randTime = 100 + (int)(Math.random() * ((1000 - 100) + 1));
+                long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + randTime);
                 long interDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 1000);
-                if (startDel >= 1000){
-                    startDel = 1000;
-                }
-                if (interDel >= 2000){
-                    interDel = 2000;
-                }
                 playSound(determineSoundFile(soundCalc), startDel, interDel);
-                wifis.add(soundCalc + " " + startDel + " " + interDel);
+                wifis.add(soundCalc + " " + randTime + " " + startDel + " " + interDel);
             }
             wifis.add("Current Chapter: " + chapterFactor);
-            wifis.add("Found Networks: " + results.size());
+            wifis.add("Found Networks: " + numberOfNetworks);
             wifis.add("Drone Volume: " + droneVol);
             wifis.add("All Sounds: " + playingSounds);
             adapter.notifyDataSetChanged();
