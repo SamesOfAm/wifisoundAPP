@@ -9,6 +9,7 @@ import android.media.SoundPool;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
+import android.support.v4.math.MathUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
@@ -23,6 +24,7 @@ import android.media.MediaPlayer;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import com.example.floriantepelmann.wifiwithstabledrone.R;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,12 +34,8 @@ public class MainActivity extends AppCompatActivity {
     private SoundPool sound = new SoundPool(3, AudioManager.STREAM_MUSIC, 0);
     private long lastTime = System.currentTimeMillis();
     private int chapterFactor = 0;
-    MediaPlayer drone;
-    {
-        drone = MediaPlayer.create(this, com.example.floriantepelmann.wifiwithstabledrone.R.raw.dronesame);
-    }
-
-    private float droneVolume = (float) 0.2;
+    private MediaPlayer drone;
+    float droneVolume = (float) 0.2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +43,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(com.example.floriantepelmann.wifiwithstabledrone.R.layout.activity_main);
         Button btn2 = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.btn2);
         btn2.setOnClickListener(new OnClickListener() {
-
             @Override
             public void onClick(View v) {
                 chapterFactor++;
@@ -66,9 +63,23 @@ public class MainActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, wifis);
         list.setAdapter(adapter);
         wifiManager.startScan();
+        drone = MediaPlayer.create(this, R.raw.dronesame);
+        drone.start();
+        drone.setLooping(true);
         drone.start();
         drone.setVolume(droneVolume, droneVolume);
         drone.setLooping(true);
+    }
+
+    private int avoidDuplicateFiles(List playingSounds, int soundCalcPre){
+        soundCalcPre--;
+        if(soundCalcPre <= 0){
+            soundCalcPre = 30;
+        }
+        if(playingSounds.contains(soundCalcPre)){
+            avoidDuplicateFiles(playingSounds, soundCalcPre);
+        }
+        return soundCalcPre;
     }
 
     public int determineSoundFile(int soundCalc){
@@ -93,7 +104,6 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     sound.play(soundId, 1, 1, 0,0,1);
-                    sound.release();
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
@@ -124,13 +134,14 @@ public class MainActivity extends AppCompatActivity {
         drone.setVolume(droneVolume, droneVolume);
         droneVolume += deltaVolume;
     }
+
     class MyBroadCastReceiver extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
             wifis.clear();
             List<ScanResult> results = wifiManager.getScanResults();
             Collections.sort(results, new ScanResultComparator());
-            // List<Integer> playingSounds = new ArrayList<>();
+            List<Integer> playingSounds = new ArrayList<>();
             int droneMaxVolume = 60;
             int calcDroneVol = results.size();
             if (calcDroneVol >= 60){
@@ -139,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
             else if (calcDroneVol <= 10){
                 calcDroneVol = 10;
             }
-            final float droneVol = (float) (1 - (Math.log(droneMaxVolume - calcDroneVol) / Math.log(droneMaxVolume)));
+            final float droneVol = (float) ((1 - Math.log(droneMaxVolume - calcDroneVol) / Math.log(droneMaxVolume)));
             fadeVolume(droneVol);
             if(System.currentTimeMillis() - lastTime >= 180000){
                 chapterFactor++;
@@ -164,14 +175,14 @@ public class MainActivity extends AppCompatActivity {
                         Integer.decode("0x" + bssid.substring(15, 17))
                 );
                 int soundCalcPre = (int) Math.ceil(adCalc / 16);
-                /* if (playingSounds.contains(soundCalcPre)){
-                    soundCalcPre -= 1;
-                    if(soundCalcPre <= 0){
-                        soundCalcPre = 0;
-                    }
+                if(playingSounds.contains(soundCalcPre)){
+                    soundCalcPre = avoidDuplicateFiles(playingSounds, soundCalcPre);
                 }
-                playingSounds.add(soundCalcPre); */
+                playingSounds.add(soundCalcPre);
                 int soundCalc = soundCalcPre + chapterFactor * 32;
+                if(soundCalc >= 127){
+                    soundCalc = 127;
+                }
                 long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + 100);
                 long interDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 1000);
                 if (startDel >= 1000){
@@ -186,6 +197,7 @@ public class MainActivity extends AppCompatActivity {
             wifis.add("Current Chapter: " + chapterFactor);
             wifis.add("Found Networks: " + results.size());
             wifis.add("Drone Volume: " + droneVol);
+            wifis.add("All Sounds: " + playingSounds);
             adapter.notifyDataSetChanged();
             Handler nextScan = new Handler();
             nextScan.postDelayed(new Runnable() {
