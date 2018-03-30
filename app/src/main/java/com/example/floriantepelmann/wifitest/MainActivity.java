@@ -31,20 +31,13 @@ public class MainActivity extends AppCompatActivity {
     private SoundPool sound = new SoundPool(3, AudioManager.STREAM_MUSIC, 0);
     private int chapterFactor = 0;
     private MediaPlayer drone;
-    float droneVolume = (float) 0;
     int numberOfNetworks = 0;
+    float droneVol = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(com.example.floriantepelmann.wifiwithstabledrone.R.layout.activity_main);
-        Button btn3 = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.btn3);
-        btn3.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                numberOfNetworks += 10;
-            }
-        });
         Button btn2 = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.btn2);
         btn2.setOnClickListener(new OnClickListener() {
             @Override
@@ -66,19 +59,17 @@ public class MainActivity extends AppCompatActivity {
         wifiManager.startScan();
         drone = MediaPlayer.create(this, R.raw.dronesame);
         drone.start();
-        drone.setLooping(true);
-        drone.start();
-        drone.setVolume(droneVolume, droneVolume);
+        drone.setVolume((float) 0, (float) 0);
         drone.setLooping(true);
     }
 
-    private int avoidDuplicateFiles(List playingSounds, int soundCalcPre){
+    private int avoidDuplicateSounds(List playingSounds, int soundCalcPre){
         soundCalcPre--;
         if(soundCalcPre <= 0){
             soundCalcPre = 30;
         }
         if(playingSounds.contains(soundCalcPre)){
-            avoidDuplicateFiles(playingSounds, soundCalcPre);
+            soundCalcPre = avoidDuplicateSounds(playingSounds, soundCalcPre);
         }
         return soundCalcPre;
     }
@@ -120,24 +111,23 @@ public class MainActivity extends AppCompatActivity {
             Collections.sort(results, new ScanResultComparator());
             List<Integer> playingSounds = new ArrayList<>();
             numberOfNetworks = results.size();
-            float droneVol = 0;
             if (numberOfNetworks <= 10){
-                droneVol = (float) 0.1;
-            }
-            else if (numberOfNetworks <= 20){
-                droneVol = (float) 0.25;
-            }
-            else if (numberOfNetworks <= 30){
                 droneVol = (float) 0.4;
             }
-            else if (numberOfNetworks <= 40){
-                droneVol = (float) 0.55;
+            else if (numberOfNetworks <= 20){
+                droneVol = (float) 0.5;
             }
-            else if (numberOfNetworks <= 50){
+            else if (numberOfNetworks <= 30){
+                droneVol = (float) 0.6;
+            }
+            else if (numberOfNetworks <= 40){
                 droneVol = (float) 0.7;
             }
+            else if (numberOfNetworks <= 50){
+                droneVol = (float) 0.8;
+            }
             else if (numberOfNetworks <= 60){
-                droneVol = (float) 0.85;
+                droneVol = (float) 0.9;
             }
             else if (numberOfNetworks > 60) {
                 droneVol = (float) 1;
@@ -159,11 +149,11 @@ public class MainActivity extends AppCompatActivity {
                 );
                 int soundCalcPre = (int) Math.ceil(adCalc / 16);
                 if(playingSounds.contains(soundCalcPre)){
-                    soundCalcPre = avoidDuplicateFiles(playingSounds, soundCalcPre);
+                    soundCalcPre = avoidDuplicateSounds(playingSounds, soundCalcPre);
                 }
                 playingSounds.add(soundCalcPre);
                 int soundCalc = soundCalcPre + chapterFactor * 32;
-                if(soundCalc >= 127){
+                if(soundCalc > 127){
                     soundCalc = 127;
                 }
                 int randTime = 100 + (int)(Math.random() * ((1000 - 100) + 1));
