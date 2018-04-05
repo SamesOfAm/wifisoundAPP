@@ -12,9 +12,20 @@
         android:layout_alignParentTop="true"
         android:layout_marginTop="13dp"
         android:cacheColorHint="@android:color/transparent" />
-    <Button android:layout_width="fill_parent"
+    <Button android:layout_width="wrap_content"
         android:layout_height="wrap_content" android:id="@+id/btn2"
         android:text="Next Chapter"
-        android:layout_alignParentBottom="true"/>
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"/>
+    <Button android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:id="@+id/btn3"
+        android:text="Start"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"/>
+    <Button android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:id="@+id/btn4"
+        android:text="End"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@+id/btn3"/>
 </RelativeLayout>
 
