@@ -81,9 +81,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 stop = true;
                 try {
-                    if(drone.isPlaying()) {
                         fadeVolume(0);
-                    }
                     nextScan.removeCallbacksAndMessages(null);
                     firstHit.removeCallbacksAndMessages(null);
                     secondHit.removeCallbacksAndMessages(null);
@@ -121,18 +119,14 @@ public class MainActivity extends AppCompatActivity {
         final boolean isFadingUp;
 
         final float volumeStep = Math.abs(volumeDifference / numberOfSteps);
-        if(volumeDifference > 0) {
-            isFadingUp = true;
-        } else {
-            isFadingUp = false;
-        }
+        isFadingUp = volumeDifference > 0;
 
         final Timer timer = new Timer(true);
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
                 fadeStep(volumeStep, isFadingUp);
-                if((isFadingUp == true && droneVol >= destVolume) || (isFadingUp == false && droneVol <= destVolume)){
+                if((isFadingUp && droneVol >= destVolume) || (!isFadingUp && droneVol <= destVolume)){
                     timer.cancel();
                     timer.purge();
                 }
@@ -143,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void fadeStep(float volumeStep, boolean fadeUp){
         final float deltaVolume;
-        if(fadeUp == true){
+        if(fadeUp){
             deltaVolume = droneVol + volumeStep;
         }
         else{
