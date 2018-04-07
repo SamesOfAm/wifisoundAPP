@@ -1,5 +1,11 @@
 package com.example.floriantepelmann.wifitest;
 
+import java.lang.*;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -13,13 +19,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import java.lang.*;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
-
 import android.media.MediaPlayer;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -29,6 +28,7 @@ import com.example.floriantepelmann.wifiwithstabledrone.R;
 public class MainActivity extends AppCompatActivity {
 
     private ArrayAdapter adapter;
+    private AudioManager audioManager;
     private WifiManager wifiManager;
     private ArrayList<String> wifis;
     private SoundPool sound = new SoundPool(5, AudioManager.STREAM_MUSIC, 0);
@@ -36,60 +36,20 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer drone;
     int numberOfNetworks = 0;
     float droneVol = 0;
-    boolean stop = false;
+    boolean stop = true;
+    boolean stopping = false;
+    boolean starting = false;
+    boolean muted = false;
     Handler nextScan = new Handler();
     Handler firstHit = new Handler();
     Handler secondHit = new Handler();
+    private long lastTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         super.onCreate(savedInstanceState);
         setContentView(com.example.floriantepelmann.wifiwithstabledrone.R.layout.activity_main);
-        Button btn2 = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.btn2);
-        btn2.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                chapterFactor++;
-                if (chapterFactor > 3){
-                    chapterFactor = 0;
-                }
-            }
-        });
-        Button btn3 = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.btn3);
-        btn3.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                stop = false;
-                Handler firstScan = new Handler();
-                firstScan.postDelayed(new Runnable() {
-                    public void run() {
-                        try {
-                            wifiManager.startScan();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }, 3000);
-                drone.start();
-                drone.setVolume((float) 0.16, (float) 0.16);
-                drone.setLooping(true);
-            }
-        });
-        Button btn4 = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.btn4);
-        btn4.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                stop = true;
-                try {
-                        fadeVolume(0);
-                    nextScan.removeCallbacksAndMessages(null);
-                    firstHit.removeCallbacksAndMessages(null);
-                    secondHit.removeCallbacksAndMessages(null);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
         ListView list = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.listView);
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         MyBroadCastReceiver myBroadCastReceiver = new MyBroadCastReceiver();
@@ -98,6 +58,123 @@ public class MainActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, wifis);
         list.setAdapter(adapter);
         drone = MediaPlayer.create(this, R.raw.dronesame);
+        final Button chapter = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.chapter);
+        chapter.setSoundEffectsEnabled(false);
+        chapter.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!stop && !stopping && !starting){
+                    chapterFactor++;
+                    if (chapterFactor > 3) {
+                        chapterFactor = 0;
+                    }
+                    lastTime = System.currentTimeMillis();
+                    chapter.setText(R.string.changing);
+                    Handler resetButtonText = new Handler();
+                    resetButtonText.postDelayed(new Runnable() {
+                        public void run() {
+                            try {
+                                chapter.setText(R.string.next_chapter);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }, 2500);
+                }
+            }
+        });
+        final Button mute = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.mute);
+        mute.setSoundEffectsEnabled(false);
+        mute.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!stop) {
+                    if (!muted) {
+                        mute.setText(R.string.unmute);
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
+                        muted = true;
+                    } else {
+                        mute.setText(R.string.mute);
+                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
+                        muted = false;
+                    }
+                }
+            }
+        });
+        final Button start = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.start);
+        start.setSoundEffectsEnabled(false);
+        start.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(stop){
+                    stop = false;
+                    starting = true;
+                    lastTime = System.currentTimeMillis();
+                    Handler firstScan = new Handler();
+                    firstScan.postDelayed(new Runnable() {
+                        public void run() {
+                            try {
+                                wifiManager.startScan();
+                                starting = false;
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }, 5000);
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
+                    drone.setVolume(0, 0);
+                    drone.start();
+                    fadeVolume(1);
+                    drone.setLooping(true);
+                }
+            }
+        });
+        final Button end = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.end);
+        end.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!stop && !stopping && !starting){
+                    stopping = true;
+                    nextScan.removeCallbacksAndMessages(null);
+                    firstHit.removeCallbacksAndMessages(null);
+                    secondHit.removeCallbacksAndMessages(null);
+                    Handler fadeDrone = new Handler();
+                    fadeDrone.postDelayed(new Runnable() {
+                        public void run() {
+                            try {
+                                fadeVolume(0);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }, 10000);
+                    Handler stopDrone = new Handler();
+                    stopDrone.postDelayed(new Runnable() {
+                        public void run() {
+                            try {
+                                drone.setVolume(0, 0);
+                                droneVol = 0;
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }, 19000);
+                    end.setText(R.string.ending);
+                    Handler resetButtonText = new Handler();
+                    resetButtonText.postDelayed(new Runnable() {
+                        public void run() {
+                            try {
+                                end.setText(R.string.end);
+                                stopping = false;
+                                stop = true;
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }, 18000);
+                }
+            }
+        });
     }
 
     private int avoidDuplicateSounds(List playingSounds, int soundCalcPre){
@@ -112,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fadeVolume(final float destVolume){
-        final int fadeDuration = 1000;
+        final int fadeDuration = 8000;
         final int fadeInterval = 80;
         final int numberOfSteps = fadeDuration / fadeInterval;
         final float volumeDifference = destVolume - droneVol;
@@ -126,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 fadeStep(volumeStep, isFadingUp);
-                if((isFadingUp && droneVol >= destVolume) || (!isFadingUp && droneVol <= destVolume)){
+                if((isFadingUp && (droneVol >= destVolume)) || (!isFadingUp && (droneVol <= destVolume))){
                     timer.cancel();
                     timer.purge();
                 }
@@ -139,13 +216,11 @@ public class MainActivity extends AppCompatActivity {
         final float deltaVolume;
         if(fadeUp){
             deltaVolume = droneVol + volumeStep;
-        }
-        else{
+        } else {
             deltaVolume = droneVol - volumeStep;
         }
         drone.setVolume(deltaVolume, deltaVolume);
         droneVol = deltaVolume;
-        System.out.println("ZZZ " + droneVol);
     }
 
     public int determineSoundFile(int soundCalc){
@@ -183,15 +258,6 @@ public class MainActivity extends AppCompatActivity {
             Collections.sort(results, new ScanResultComparator());
             List<Integer> playingSounds = new ArrayList<>();
             numberOfNetworks = results.size();
-            int droneVolNum = results.size();
-            if (droneVolNum > 60){
-                droneVolNum = 60;
-            }
-            if (droneVolNum < 10) {
-                droneVolNum = 10;
-            }
-            droneVol = (float) droneVolNum / 60;
-            fadeVolume(droneVol);
             int iterations = 5;
             if (numberOfNetworks < 5) {
                 iterations = results.size();
@@ -212,21 +278,27 @@ public class MainActivity extends AppCompatActivity {
                 }
                 playingSounds.add(soundCalcPre);
                 int soundCalc = soundCalcPre + chapterFactor * 28;
-                if(soundCalc > 127){
-                    soundCalc = 127;
+                if(soundCalc > 115){
+                    soundCalc = 115;
                 }
                 int randTime = 100 + (int)(Math.random() * ((1000 - 100) + 1));
                 long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + randTime);
                 long interDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 1000);
+                if(System.currentTimeMillis() - lastTime >= 240000){
+                    chapterFactor++;
+                    if (chapterFactor > 3){
+                        chapterFactor = 3;
+                    }
+                    lastTime = System.currentTimeMillis();
+                }
                 playSound(determineSoundFile(soundCalc), startDel, interDel);
                 wifis.add(soundCalc + " " + randTime + " " + startDel + " " + interDel);
             }
             wifis.add("Current Chapter: " + chapterFactor);
             wifis.add("Found Networks: " + numberOfNetworks);
-            wifis.add("Drone Volume: " + droneVol);
             wifis.add("All Sounds: " + playingSounds);
             adapter.notifyDataSetChanged();
-            if(!stop) {
+            if(!stopping) {
                 nextScan.postDelayed(new Runnable() {
                     public void run() {
                         try {

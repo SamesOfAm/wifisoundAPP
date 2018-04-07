@@ -1,4 +1,10 @@
 <resources>
     <string name="app_name">WiFi mit Drone</string>
     <string name="close_app">Close App</string>
+    <string name="end">End</string>
+    <string name="ending">Ending&#8230;</string>
+    <string name="mute">Mute</string>
+    <string name="unmute">Unmute</string>
+    <string name="next_chapter">Next Chapter</string>
+    <string name="changing">Changing&#8230;</string>
 </resources>
