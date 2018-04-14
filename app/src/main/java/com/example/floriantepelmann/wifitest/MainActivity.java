@@ -118,12 +118,21 @@ public class MainActivity extends AppCompatActivity {
                         public void run() {
                             try {
                                 wifiManager.startScan();
-                                starting = false;
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
                         }
                     }, 5000);
+                    Handler startingIsOver = new Handler();
+                    startingIsOver.postDelayed(new Runnable() {
+                        public void run() {
+                            try {
+                                starting = false;
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }, 9000);
                     audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
                     drone.setVolume(0, 0);
                     drone.start();
@@ -318,7 +327,7 @@ public class MainActivity extends AppCompatActivity {
                     int randTime = 100 + (int) (Math.random() * ((1000 - 100) + 1));
                     long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + randTime);
                     long interDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 1000);
-                    if (System.currentTimeMillis() - lastTime >= 10000) {
+                    if (System.currentTimeMillis() - lastTime >= 240000) {
                         chapterFactor++;
                         if (chapterFactor > 3) {
                             chapterFactor = 3;
