@@ -43,6 +43,9 @@ public class MainActivity extends AppCompatActivity {
     Handler nextScan = new Handler();
     Handler firstHit = new Handler();
     Handler secondHit = new Handler();
+    Handler finish = new Handler();
+    Handler stopDrone = new Handler();
+    Handler fadeDrone = new Handler();
     private long lastTime;
 
     @Override
@@ -138,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
                     nextScan.removeCallbacksAndMessages(null);
                     firstHit.removeCallbacksAndMessages(null);
                     secondHit.removeCallbacksAndMessages(null);
-                    Handler fadeDrone = new Handler();
                     fadeDrone.postDelayed(new Runnable() {
                         public void run() {
                             try {
@@ -148,7 +150,6 @@ public class MainActivity extends AppCompatActivity {
                             }
                         }
                     }, 10000);
-                    Handler stopDrone = new Handler();
                     stopDrone.postDelayed(new Runnable() {
                         public void run() {
                             try {
@@ -160,8 +161,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }, 19000);
                     end.setText(R.string.ending);
-                    Handler resetButtonText = new Handler();
-                    resetButtonText.postDelayed(new Runnable() {
+                    finish.postDelayed(new Runnable() {
                         public void run() {
                             try {
                                 end.setText(R.string.end);
@@ -172,6 +172,37 @@ public class MainActivity extends AppCompatActivity {
                             }
                         }
                     }, 18000);
+                }
+            }
+        });
+        final Button restart = findViewById(com.example.floriantepelmann.wifiwithstabledrone.R.id.restart);
+        restart.setSoundEffectsEnabled(false);
+        restart.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(stop) stop = false;
+                if(starting) starting = false;
+                if(stopping) {
+                    stopping = false;
+                    finish.removeCallbacksAndMessages(null);
+                    stopDrone.removeCallbacksAndMessages(null);
+                    fadeDrone.removeCallbacksAndMessages(null);
+                    end.setText(R.string.end);
+                }
+                if(muted) {
+                    muted = false;
+                    mute.setText(R.string.mute);
+                }
+                wifiManager.startScan();
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 15, 0);
+                if (drone.isPlaying()){
+                    drone.setVolume(1,1);
+                    droneVol = 1;
+                }
+                else {
+                    drone.start();
+                    drone.setVolume(1, 1);
+                    droneVol = 1;
                 }
             }
         });
@@ -214,13 +245,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void fadeStep(float volumeStep, boolean fadeUp){
         final float deltaVolume;
-        if(fadeUp){
-            deltaVolume = droneVol + volumeStep;
-        } else {
-            deltaVolume = droneVol - volumeStep;
+        if(stopping || starting) {
+            if (fadeUp) {
+                deltaVolume = droneVol + volumeStep;
+            } else {
+                deltaVolume = droneVol - volumeStep;
+            }
+            drone.setVolume(deltaVolume, deltaVolume);
+            droneVol = deltaVolume;
         }
-        drone.setVolume(deltaVolume, deltaVolume);
-        droneVol = deltaVolume;
     }
 
     public int determineSoundFile(int soundCalc){
@@ -253,61 +286,63 @@ public class MainActivity extends AppCompatActivity {
     class MyBroadCastReceiver extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
-            wifis.clear();
-            List<ScanResult> results = wifiManager.getScanResults();
-            Collections.sort(results, new ScanResultComparator());
-            List<Integer> playingSounds = new ArrayList<>();
-            numberOfNetworks = results.size();
-            int iterations = 5;
-            if (numberOfNetworks < 5) {
-                iterations = results.size();
-            }
-            for (int i = 0; i < iterations; i++) {
-                String bssid = results.get(i).BSSID;
-                int adCalc = Math.abs(
-                        Integer.decode("0x" + bssid.substring(0, 2)) -
-                        Integer.decode("0x" + bssid.substring(3, 5)) +
-                        Integer.decode("0x" + bssid.substring(6, 8)) -
-                        Integer.decode("0x" + bssid.substring(9, 11)) +
-                        Integer.decode("0x" + bssid.substring(12, 14)) -
-                        Integer.decode("0x" + bssid.substring(15, 17))
-                );
-                int soundCalcPre = (int) Math.ceil(adCalc / 27);
-                if(playingSounds.contains(soundCalcPre)){
-                    soundCalcPre = avoidDuplicateSounds(playingSounds, soundCalcPre);
+            if(!stop) {
+                wifis.clear();
+                List<ScanResult> results = wifiManager.getScanResults();
+                Collections.sort(results, new ScanResultComparator());
+                List<Integer> playingSounds = new ArrayList<>();
+                numberOfNetworks = results.size();
+                int iterations = 5;
+                if (numberOfNetworks < 5) {
+                    iterations = results.size();
                 }
-                playingSounds.add(soundCalcPre);
-                int soundCalc = soundCalcPre + chapterFactor * 28;
-                if(soundCalc > 115){
-                    soundCalc = 115;
-                }
-                int randTime = 100 + (int)(Math.random() * ((1000 - 100) + 1));
-                long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + randTime);
-                long interDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 1000);
-                if(System.currentTimeMillis() - lastTime >= 240000){
-                    chapterFactor++;
-                    if (chapterFactor > 3){
-                        chapterFactor = 3;
+                for (int i = 0; i < iterations; i++) {
+                    String bssid = results.get(i).BSSID;
+                    int adCalc = Math.abs(
+                            Integer.decode("0x" + bssid.substring(0, 2)) -
+                                    Integer.decode("0x" + bssid.substring(3, 5)) +
+                                    Integer.decode("0x" + bssid.substring(6, 8)) -
+                                    Integer.decode("0x" + bssid.substring(9, 11)) +
+                                    Integer.decode("0x" + bssid.substring(12, 14)) -
+                                    Integer.decode("0x" + bssid.substring(15, 17))
+                    );
+                    int soundCalcPre = (int) Math.ceil(adCalc / 27);
+                    if (playingSounds.contains(soundCalcPre)) {
+                        soundCalcPre = avoidDuplicateSounds(playingSounds, soundCalcPre);
                     }
-                    lastTime = System.currentTimeMillis();
-                }
-                playSound(determineSoundFile(soundCalc), startDel, interDel);
-                wifis.add(soundCalc + " " + randTime + " " + startDel + " " + interDel);
-            }
-            wifis.add("Current Chapter: " + chapterFactor);
-            wifis.add("Found Networks: " + numberOfNetworks);
-            wifis.add("All Sounds: " + playingSounds);
-            adapter.notifyDataSetChanged();
-            if(!stopping) {
-                nextScan.postDelayed(new Runnable() {
-                    public void run() {
-                        try {
-                            wifiManager.startScan();
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                    playingSounds.add(soundCalcPre);
+                    int soundCalc = soundCalcPre + chapterFactor * 28;
+                    if (soundCalc > 115) {
+                        soundCalc = 115;
+                    }
+                    int randTime = 100 + (int) (Math.random() * ((1000 - 100) + 1));
+                    long startDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(12, 14)) * 7 + randTime);
+                    long interDel = (long) Math.abs(Integer.decode("0x" + bssid.substring(15, 17)) * 7 + 1000);
+                    if (System.currentTimeMillis() - lastTime >= 10000) {
+                        chapterFactor++;
+                        if (chapterFactor > 3) {
+                            chapterFactor = 3;
                         }
+                        lastTime = System.currentTimeMillis();
                     }
-                }, 2500);
+                    playSound(determineSoundFile(soundCalc), startDel, interDel);
+                    wifis.add(soundCalc + " " + randTime + " " + startDel + " " + interDel);
+                }
+                wifis.add("Current Chapter: " + chapterFactor);
+                wifis.add("Found Networks: " + numberOfNetworks);
+                wifis.add("All Sounds: " + playingSounds);
+                adapter.notifyDataSetChanged();
+                if (!stopping) {
+                    nextScan.postDelayed(new Runnable() {
+                        public void run() {
+                            try {
+                                wifiManager.startScan();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }, 2500);
+                }
             }
         }
     }

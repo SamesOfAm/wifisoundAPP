@@ -14,26 +14,31 @@
         android:cacheColorHint="@android:color/transparent" />
     <Button android:layout_width="wrap_content"
         android:layout_height="wrap_content" android:id="@+id/start"
-        android:text="Start"
+        android:text="@string/start"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:soundEffectsEnabled="false"/>
     <Button android:layout_width="wrap_content"
         android:layout_height="wrap_content" android:id="@+id/end"
-        android:text="End"
+        android:text="@string/end"
         android:layout_alignParentBottom="true"
         android:layout_toRightOf="@+id/start"
         android:soundEffectsEnabled="false"/>
     <Button android:layout_width="wrap_content"
         android:layout_height="wrap_content" android:id="@+id/mute"
         android:layout_alignParentRight="true"
-        android:text="Mute"
+        android:text="@string/mute"
         android:layout_above="@+id/chapter"
         android:soundEffectsEnabled="false"/>
     <Button android:layout_width="wrap_content"
         android:layout_height="wrap_content" android:id="@+id/chapter"
-        android:text="Next Chapter"
+        android:text="@string/next_chapter"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"/>
+    <Button android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:id="@+id/restart"
+        android:text="@string/restart"
+        android:layout_above="@+id/start"
+        android:layout_alignParentLeft="true"/>
 </RelativeLayout>
 
